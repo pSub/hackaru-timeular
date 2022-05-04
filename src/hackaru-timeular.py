@@ -7,6 +7,11 @@ import yaml
 from bleak import BleakClient
 
 MODEL_NUMBER_UUID = "00002a24-0000-1000-8000-00805f9b34fb"
+MANUFACTURER_UUID = "00002a29-0000-1000-8000-00805f9b34fb"
+SERIAL_NUMBER_UUID = "00002a25-0000-1000-8000-00805f9b34fb"
+HARDWARE_REVISION_UUID = "00002a27-0000-1000-8000-00805f9b34fb"
+SOFTWARE_REVISION_UUID = "00002a28-0000-1000-8000-00805f9b34fb"
+FIRMWARE_REVISION_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
 ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
 currentTask = None
@@ -82,11 +87,31 @@ def initCurrentTask():
     currentTask = resp.json()
 
 
+async def printDeviceInformation(client):
+    model_number = await client.read_gatt_char(MODEL_NUMBER_UUID)
+    print("Model Number: {0}".format("".join(map(chr, model_number))))
+
+    manufacturer = await client.read_gatt_char(MANUFACTURER_UUID)
+    print("Manufacturer: {0}".format("".join(map(chr, manufacturer))))
+
+    serial_number = await client.read_gatt_char(SERIAL_NUMBER_UUID)
+    print("Serial Number: {0}".format("".join(map(chr, serial_number))))
+
+    hardware_revision = await client.read_gatt_char(HARDWARE_REVISION_UUID)
+    print("Hardware Revision: {0}".format(
+        "".join(map(chr, hardware_revision))))
+
+    software_revision = await client.read_gatt_char(SOFTWARE_REVISION_UUID)
+    print("Softwar Revision: {0}".format("".join(map(chr, software_revision))))
+
+    firmware_revision = await client.read_gatt_char(FIRMWARE_REVISION_UUID)
+    print("Firmware Revision: {0}".format(
+        "".join(map(chr, firmware_revision))))
+
+
 async def main(address):
     async with BleakClient(address) as client:
-
-        model_number = await client.read_gatt_char(MODEL_NUMBER_UUID)
-        print("Model Number: {0}".format("".join(map(chr, model_number))))
+        await printDeviceInformation(client)
 
         await client.start_notify(ORIENTATION_UUID, callback)
 

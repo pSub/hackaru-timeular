@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+import re
 
 import requests
 import yaml
@@ -20,8 +21,7 @@ def callback(sender: int, data: bytearray):
         stopCurrentTask()
         return
 
-    if currentTask != None:
-        stopCurrentTask()
+    stopCurrentTask()
     task = getTask(orientation)
     startTask(**task)
 
@@ -50,6 +50,10 @@ def startTask(projectId: int, description: str):
 
 def stopCurrentTask():
     global currentTask
+
+    if currentTask == None:
+        return
+
     time = datetime.utcnow().strftime('%a %B %d %Y %H:%M:%S')
     data = f'{{"activity":{{"id":{currentTask["id"]},"stopped_at":"{time}"}}}}'
 

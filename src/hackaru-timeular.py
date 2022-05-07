@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import re
 
 import requests
 import yaml

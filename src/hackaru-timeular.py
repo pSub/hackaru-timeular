@@ -16,6 +16,8 @@ ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
 currentTask = None
 
+def now():
+    return datetime.utcnow().strftime('%a %B %d %Y %H:%M:%S')
 
 def callback(sender: int, data: bytearray):
     assert len(data) == 1
@@ -40,8 +42,7 @@ def getTask(orientation: int):
 
 def startTask(projectId: int, description: str):
     global currentTask
-    time = datetime.utcnow().strftime('%a %B %d %Y %H:%M:%S')
-    data = f'{{"activity":{{"description":"{description or ""}","project_id":{projectId},"started_at":"{time}"}}}}'
+    data = f'{{"activity":{{"description":"{description or ""}","project_id":{projectId},"started_at":"{now()}"}}}}'
     headers = {
         "cookie": f"auth_token_id={config['authid']}; auth_token_raw={config['authtoken']}",
         "content-type": "application/json",
@@ -59,8 +60,7 @@ def stopCurrentTask():
     if currentTask == None:
         return
 
-    time = datetime.utcnow().strftime('%a %B %d %Y %H:%M:%S')
-    data = f'{{"activity":{{"id":{currentTask["id"]},"stopped_at":"{time}"}}}}'
+    data = f'{{"activity":{{"id":{currentTask["id"]},"stopped_at":"{now()}"}}}}'
 
     headers = {
         "cookie": f"auth_token_id={config['authid']}; auth_token_raw={config['authtoken']}",

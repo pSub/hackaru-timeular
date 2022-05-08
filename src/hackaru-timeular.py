@@ -82,24 +82,22 @@ def initCurrentTask():
 
 async def printDeviceInformation(client):
     model_number = await client.read_gatt_char(MODEL_NUMBER_UUID)
-    print("Model Number: {0}".format("".join(map(chr, model_number))))
+    print(f"Model Number: {''.join(map(chr, model_number))}")
 
     manufacturer = await client.read_gatt_char(MANUFACTURER_UUID)
-    print("Manufacturer: {0}".format("".join(map(chr, manufacturer))))
+    print(f"Manufacturer: {''.join(map(chr, manufacturer))}")
 
     serial_number = await client.read_gatt_char(SERIAL_NUMBER_UUID)
-    print("Serial Number: {0}".format("".join(map(chr, serial_number))))
+    print(f"Serial Number: {''.join(map(chr, serial_number))}")
 
     hardware_revision = await client.read_gatt_char(HARDWARE_REVISION_UUID)
-    print("Hardware Revision: {0}".format(
-        "".join(map(chr, hardware_revision))))
+    print(f"Hardware Revision: {''.join(map(chr, hardware_revision))}")
 
     software_revision = await client.read_gatt_char(SOFTWARE_REVISION_UUID)
-    print("Softwar Revision: {0}".format("".join(map(chr, software_revision))))
+    print(f"Software Revision: {''.join(map(chr, software_revision))}")
 
     firmware_revision = await client.read_gatt_char(FIRMWARE_REVISION_UUID)
-    print("Firmware Revision: {0}".format(
-        "".join(map(chr, firmware_revision))))
+    print(f"Firmware Revision: {''.join(map(chr, firmware_revision))}")
 
 
 async def main(address):

@@ -19,9 +19,11 @@ ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
 CURRENT_TASK = None
 
+
 def now():
     """Returns the current time as a formatted string"""
     return datetime.utcnow().strftime('%a %B %d %Y %H:%M:%S')
+
 
 def headers():
     """Returns the authenticated headers for Hackaru"""
@@ -32,7 +34,8 @@ def headers():
     }
 
 
-def callback(sender: int, data: bytearray):
+def callback(sender: int, # pylint: disable=unused-argument
+             data: bytearray):
     """Callback for orientation changes of the Timeular cube"""
     assert len(data) == 1
     orientation = data[0]

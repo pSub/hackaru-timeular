@@ -1,3 +1,7 @@
+"""
+A simple linkage between a Timular cube and Hackaru.
+"""
+
 import asyncio
 from datetime import datetime
 
@@ -13,14 +17,14 @@ SOFTWARE_REVISION_UUID = "00002a28-0000-1000-8000-00805f9b34fb"
 FIRMWARE_REVISION_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
 ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
-currentTask = None
-
+CURRENT_TASK = None
 
 def now():
+    """Returns the current time as a formatted string"""
     return datetime.utcnow().strftime('%a %B %d %Y %H:%M:%S')
 
-
 def headers():
+    """Returns the authenticated headers for Hackaru"""
     return {
         "cookie": f"auth_token_id={config['authid']}; auth_token_raw={config['authtoken']}",
         "content-type": "application/json",
@@ -29,6 +33,7 @@ def headers():
 
 
 def callback(sender: int, data: bytearray):
+    """Callback for orientation changes of the Timeular cube"""
     assert len(data) == 1
     orientation = data[0]
     print(f"Orientation: {orientation}")
@@ -43,6 +48,7 @@ def callback(sender: int, data: bytearray):
 
 
 def getTask(orientation: int):
+    """Retrieve a task for an orientation from the config file"""
     task = config['mapping'][orientation]
     return {
         'projectId': config['tasks'][task]['id'],
@@ -50,37 +56,42 @@ def getTask(orientation: int):
 
 
 def startTask(projectId: int, description: str):
-    global currentTask
+    """Start a task in Hackaru"""
+    global CURRENT_TASK
     data = f'{{"activity":{{"description":"{description or ""}","project_id":{projectId},"started_at":"{now()}"}}}}'
 
     resp = requests.post(config['endpoint'], data=data, headers=headers())
 
-    currentTask = resp.json()
+    CURRENT_TASK = resp.json()
 
 
 def stopCurrentTask():
-    global currentTask
+    """Stop a task in Hackaru"""
+    global CURRENT_TASK
 
-    if currentTask == None:
+    if CURRENT_TASK == None:
         return
 
-    data = f'{{"activity":{{"id":{currentTask["id"]},"stopped_at":"{now()}"}}}}'
+    data = f'{{"activity":{{"id":{CURRENT_TASK["id"]},"stopped_at":"{now()}"}}}}'
 
     requests.put(config['endpoint'] + "/" +
-                 str(currentTask['id']), data=data, headers=headers())
+                 str(CURRENT_TASK['id']), data=data, headers=headers())
 
-    currentTask = None
+    CURRENT_TASK = None
 
 
 def initCurrentTask():
-    global currentTask
+    """Initialize the current task with the task currently active in Hackaru"""
+    global CURRENT_TASK
 
     resp = requests.get(config['endpoint'] + '/working', headers=headers())
 
-    currentTask = resp.json()
+    CURRENT_TASK = resp.json()
 
 
 async def printDeviceInformation(client):
+    """Print device information about the connected Timular cube"""
+
     model_number = await client.read_gatt_char(MODEL_NUMBER_UUID)
     print(f"Model Number: {''.join(map(chr, model_number))}")
 
@@ -101,6 +112,7 @@ async def printDeviceInformation(client):
 
 
 async def main(address):
+    """Main loop listening for orientation changes"""
     async with BleakClient(address) as client:
         await printDeviceInformation(client)
 

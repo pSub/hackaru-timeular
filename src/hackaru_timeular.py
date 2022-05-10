@@ -39,15 +39,15 @@ def callback(sender: int, data: bytearray):
     print(f"Orientation: {orientation}")
 
     if orientation not in range(1, 9):
-        stopCurrentTask()
+        stop_current_task()
         return
 
-    stopCurrentTask()
-    task = getTask(orientation)
-    startTask(**task)
+    stop_current_task()
+    task = get_task(orientation)
+    start_task(**task)
 
 
-def getTask(orientation: int):
+def get_task(orientation: int):
     """Retrieve a task for an orientation from the config file"""
     task = config['mapping'][orientation]
     return {
@@ -55,7 +55,7 @@ def getTask(orientation: int):
         'description': config['tasks'][task]['description']}
 
 
-def startTask(projectId: int, description: str):
+def start_task(projectId: int, description: str):
     """Start a task in Hackaru"""
     global CURRENT_TASK
     data = f'{{"activity":{{"description":"{description or ""}","project_id":{projectId},"started_at":"{now()}"}}}}'
@@ -65,7 +65,7 @@ def startTask(projectId: int, description: str):
     CURRENT_TASK = resp.json()
 
 
-def stopCurrentTask():
+def stop_current_task():
     """Stop a task in Hackaru"""
     global CURRENT_TASK
 
@@ -80,7 +80,7 @@ def stopCurrentTask():
     CURRENT_TASK = None
 
 
-def initCurrentTask():
+def init_current_task():
     """Initialize the current task with the task currently active in Hackaru"""
     global CURRENT_TASK
 
@@ -89,7 +89,7 @@ def initCurrentTask():
     CURRENT_TASK = resp.json()
 
 
-async def printDeviceInformation(client):
+async def print_device_information(client):
     """Print device information about the connected Timular cube"""
 
     model_number = await client.read_gatt_char(MODEL_NUMBER_UUID)
@@ -114,7 +114,7 @@ async def printDeviceInformation(client):
 async def main(address):
     """Main loop listening for orientation changes"""
     async with BleakClient(address) as client:
-        await printDeviceInformation(client)
+        await print_device_information(client)
 
         await client.start_notify(ORIENTATION_UUID, callback)
 
@@ -123,5 +123,5 @@ async def main(address):
 
 with open('config.yml', 'r') as f:
     config = yaml.safe_load(f)
-    initCurrentTask()
+    init_current_task()
     asyncio.run(main(config['address']))

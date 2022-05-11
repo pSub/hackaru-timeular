@@ -133,5 +133,5 @@ async def main(state):
             await asyncio.sleep(1)
 
 config_dir = appdirs.user_config_dir(appname='hackaru-timeular')
-with open(os.path.join(config_dir, 'config.yml'), 'r') as f:
+with open(os.path.join(config_dir, 'config.yml'), 'r', encoding="utf-8") as f:
     asyncio.run(main(State(yaml.safe_load(f))))

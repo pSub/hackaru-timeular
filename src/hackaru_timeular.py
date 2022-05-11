@@ -12,6 +12,7 @@ import appdirs  # type: ignore
 import requests
 import yaml
 from bleak import BleakClient  # type: ignore
+from recordclass import RecordClass  # type: ignore
 
 MODEL_NUMBER_UUID = "00002a24-0000-1000-8000-00805f9b34fb"
 MANUFACTURER_UUID = "00002a29-0000-1000-8000-00805f9b34fb"
@@ -22,20 +23,12 @@ FIRMWARE_REVISION_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
 ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
 
-class State:
+class State(RecordClass):
     """Application state"""
 
+    # pylint: disable=too-few-public-methods
     current_task: Optional[dict]
-
     config: dict
-
-    def __init__(self, config: dict):
-        """Initialize the current task with the task currently active in Hackaru"""
-
-        self.current_task = requests.get(
-            config["endpoint"] + "/working", headers=headers(config)
-        ).json()
-        self.config = config
 
 
 def now():
@@ -127,7 +120,7 @@ async def print_device_information(client):
     print(f"Firmware Revision: {''.join(map(chr, firmware_revision))}")
 
 
-async def main(state):
+async def main(state: State):
     """Main loop listening for orientation changes"""
     async with BleakClient(state.config["address"]) as client:
         await print_device_information(client)
@@ -142,4 +135,9 @@ async def main(state):
 
 config_dir = appdirs.user_config_dir(appname="hackaru-timeular")
 with open(os.path.join(config_dir, "config.yml"), "r", encoding="utf-8") as f:
-    asyncio.run(main(State(yaml.safe_load(f))))
+
+    config = yaml.safe_load(f)
+    current_task = requests.get(
+        config["endpoint"] + "/working", headers=headers(config)
+    ).json()
+    asyncio.run(main(State(config=config, current_task=current_task)))

@@ -9,7 +9,7 @@ from typing import Optional
 
 import requests
 import yaml
-from bleak import BleakClient
+from bleak import BleakClient # type: ignore
 
 MODEL_NUMBER_UUID = "00002a24-0000-1000-8000-00805f9b34fb"
 MANUFACTURER_UUID = "00002a29-0000-1000-8000-00805f9b34fb"

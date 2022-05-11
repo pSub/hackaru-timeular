@@ -5,6 +5,7 @@ A simple linkage between a Timular cube and Hackaru.
 import asyncio
 from datetime import datetime
 from functools import partial
+from typing import Optional
 
 import requests
 import yaml
@@ -21,11 +22,11 @@ ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
 class State:
     """Application state"""
-    current_task: str
+    current_task: Optional[dict]
 
-    config: str
+    config: dict
 
-    def __init__(self, config):
+    def __init__(self, config: dict):
         """Initialize the current task with the task currently active in Hackaru"""
 
         self.current_task = requests.get(

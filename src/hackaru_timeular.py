@@ -3,10 +3,12 @@ A simple linkage between a Timular cube and Hackaru.
 """
 
 import asyncio
+import os
 from datetime import datetime
 from functools import partial
 from typing import Optional
 
+import appdirs # type: ignore
 import requests
 import yaml
 from bleak import BleakClient # type: ignore
@@ -49,8 +51,8 @@ def headers(config):
 
 
 def callback_with_state(state: State,
-             sender: int,  # pylint: disable=unused-argument
-             data: bytearray):
+                        sender: int,  # pylint: disable=unused-argument
+                        data: bytearray):
     """Callback for orientation changes of the Timeular cube"""
     assert len(data) == 1
     orientation = data[0]
@@ -130,5 +132,6 @@ async def main(state):
         while 1:
             await asyncio.sleep(1)
 
-with open('config.yml', 'r') as f:
+config_dir = appdirs.user_config_dir(appname='hackaru-timeular')
+with open(os.path.join(config_dir, 'config.yml'), 'r') as f:
     asyncio.run(main(State(yaml.safe_load(f))))

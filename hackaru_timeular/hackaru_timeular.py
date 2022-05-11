@@ -120,7 +120,7 @@ async def print_device_information(client):
     print(f"Firmware Revision: {''.join(map(chr, firmware_revision))}")
 
 
-async def main(state: State):
+async def main_loop(state: State):
     """Main loop listening for orientation changes"""
     async with BleakClient(state.config["address"]) as client:
         await print_device_information(client)
@@ -133,11 +133,13 @@ async def main(state: State):
             await asyncio.sleep(1)
 
 
-config_dir = appdirs.user_config_dir(appname="hackaru-timeular")
-with open(os.path.join(config_dir, "config.yml"), "r", encoding="utf-8") as f:
+def main():
+    """ "Console script entry point"""
+    config_dir = appdirs.user_config_dir(appname="hackaru-timeular")
+    with open(os.path.join(config_dir, "config.yml"), "r", encoding="utf-8") as f:
 
-    config = yaml.safe_load(f)
-    current_task = requests.get(
-        config["endpoint"] + "/working", headers=headers(config)
-    ).json()
-    asyncio.run(main(State(config=config, current_task=current_task)))
+        config = yaml.safe_load(f)
+        current_task = requests.get(
+            config["endpoint"] + "/working", headers=headers(config)
+        ).json()
+        asyncio.run(main_loop(State(config=config, current_task=current_task)))

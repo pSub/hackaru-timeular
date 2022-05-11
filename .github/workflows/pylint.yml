@@ -11,4 +11,4 @@ jobs:
     - name: Python Linter
       uses: pSub/python-linter@master
       with:
-        source: "src"
+        source: "hackaru_timeular"

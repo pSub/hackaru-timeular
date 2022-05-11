@@ -8,10 +8,10 @@ from datetime import datetime
 from functools import partial
 from typing import Optional
 
-import appdirs # type: ignore
+import appdirs  # type: ignore
 import requests
 import yaml
-from bleak import BleakClient # type: ignore
+from bleak import BleakClient  # type: ignore
 
 MODEL_NUMBER_UUID = "00002a24-0000-1000-8000-00805f9b34fb"
 MANUFACTURER_UUID = "00002a29-0000-1000-8000-00805f9b34fb"
@@ -24,6 +24,7 @@ ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
 class State:
     """Application state"""
+
     current_task: Optional[dict]
 
     config: dict
@@ -32,13 +33,14 @@ class State:
         """Initialize the current task with the task currently active in Hackaru"""
 
         self.current_task = requests.get(
-            config['endpoint'] + '/working', headers=headers(config)).json()
+            config["endpoint"] + "/working", headers=headers(config)
+        ).json()
         self.config = config
 
 
 def now():
     """Returns the current time as a formatted string"""
-    return datetime.utcnow().strftime('%a %B %d %Y %H:%M:%S')
+    return datetime.utcnow().strftime("%a %B %d %Y %H:%M:%S")
 
 
 def headers(config):
@@ -46,13 +48,13 @@ def headers(config):
     return {
         "cookie": f"auth_token_id={config['authid']}; auth_token_raw={config['authtoken']}",
         "content-type": "application/json",
-        "x-requested-with": "XMLHttpRequest"
+        "x-requested-with": "XMLHttpRequest",
     }
 
 
-def callback_with_state(state: State,
-                        sender: int,  # pylint: disable=unused-argument
-                        data: bytearray):
+def callback_with_state(
+    state: State, sender: int, data: bytearray  # pylint: disable=unused-argument
+):
     """Callback for orientation changes of the Timeular cube"""
     assert len(data) == 1
     orientation = data[0]
@@ -69,10 +71,11 @@ def callback_with_state(state: State,
 
 def get_task(state: State, orientation: int):
     """Retrieve a task for an orientation from the config file"""
-    task = state.config['mapping'][orientation]
+    task = state.config["mapping"][orientation]
     return {
-        'projectId': state.config['tasks'][task]['id'],
-        'description': state.config['tasks'][task]['description']}
+        "projectId": state.config["tasks"][task]["id"],
+        "description": state.config["tasks"][task]["description"],
+    }
 
 
 def start_task(state: State, projectId: int, description: str):
@@ -80,7 +83,8 @@ def start_task(state: State, projectId: int, description: str):
     data = f'{{"activity":{{"description":"{description or ""}","project_id":{projectId},"started_at":"{now()}"}}}}'
 
     resp = requests.post(
-        state.config['endpoint'], data=data, headers=headers(state.config))
+        state.config["endpoint"], data=data, headers=headers(state.config)
+    )
 
     state.current_task = resp.json()
 
@@ -92,8 +96,11 @@ def stop_current_task(state: State):
 
     data = f'{{"activity":{{"id":{state.current_task["id"]},"stopped_at":"{now()}"}}}}'
 
-    requests.put(state.config['endpoint'] + "/" +
-                 str(state.current_task['id']), data=data, headers=headers(state.config))
+    requests.put(
+        state.config["endpoint"] + "/" + str(state.current_task["id"]),
+        data=data,
+        headers=headers(state.config),
+    )
 
     state.current_task = None
 
@@ -122,7 +129,7 @@ async def print_device_information(client):
 
 async def main(state):
     """Main loop listening for orientation changes"""
-    async with BleakClient(state.config['address']) as client:
+    async with BleakClient(state.config["address"]) as client:
         await print_device_information(client)
 
         callback = partial(callback_with_state, state)
@@ -132,6 +139,7 @@ async def main(state):
         while 1:
             await asyncio.sleep(1)
 
-config_dir = appdirs.user_config_dir(appname='hackaru-timeular')
-with open(os.path.join(config_dir, 'config.yml'), 'r', encoding="utf-8") as f:
+
+config_dir = appdirs.user_config_dir(appname="hackaru-timeular")
+with open(os.path.join(config_dir, "config.yml"), "r", encoding="utf-8") as f:
     asyncio.run(main(State(yaml.safe_load(f))))

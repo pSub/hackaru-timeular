@@ -66,14 +66,14 @@ def get_task(state: State, orientation: int):
     """Retrieve a task for an orientation from the config file"""
     task = state.config["mapping"][orientation]
     return {
-        "projectId": state.config["tasks"][task]["id"],
+        "project_id": state.config["tasks"][task]["id"],
         "description": state.config["tasks"][task]["description"],
     }
 
 
-def start_task(state: State, projectId: int, description: str):
+def start_task(state: State, project_id: int, description: str):
     """Start a task in Hackaru"""
-    data = f'{{"activity":{{"description":"{description or ""}","project_id":{projectId},"started_at":"{now()}"}}}}'
+    data = f'{{"activity":{{"description":"{description or ""}","project_id":{project_id},"started_at":"{now()}"}}}}'
 
     resp = requests.post(
         state.config["endpoint"], data=data, headers=headers(state.config)

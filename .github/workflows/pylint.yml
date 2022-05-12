@@ -12,3 +12,4 @@ jobs:
       uses: pSub/python-linter@master
       with:
         source: "hackaru_timeular"
+        pylint-options: "--rcfile=.pylintrc"

@@ -3,6 +3,7 @@ A simple linkage between a Timular cube and Hackaru.
 """
 
 import asyncio
+import logging
 import os
 import signal
 from datetime import datetime
@@ -22,6 +23,8 @@ HARDWARE_REVISION_UUID = "00002a27-0000-1000-8000-00805f9b34fb"
 SOFTWARE_REVISION_UUID = "00002a28-0000-1000-8000-00805f9b34fb"
 FIRMWARE_REVISION_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
 ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
+
+logger = logging.getLogger("hackaru_timular")
 
 
 class State(RecordClass):
@@ -64,7 +67,7 @@ def callback_with_state(
     """Callback for orientation changes of the Timeular cube"""
     assert len(data) == 1
     orientation = data[0]
-    print(f"Orientation: {orientation}")
+    logger.info("Orientation: %i", orientation)
 
     if orientation not in range(1, 9):
         stop_current_task(state)
@@ -115,22 +118,22 @@ async def print_device_information(client):
     """Print device information about the connected Timular cube"""
 
     model_number = await client.read_gatt_char(MODEL_NUMBER_UUID)
-    print(f"Model Number: {''.join(map(chr, model_number))}")
+    logger.info("Model Number: %s", "".join(map(chr, model_number)))
 
     manufacturer = await client.read_gatt_char(MANUFACTURER_UUID)
-    print(f"Manufacturer: {''.join(map(chr, manufacturer))}")
+    logger.info("Manufacturer: %s", "".join(map(chr, manufacturer)))
 
     serial_number = await client.read_gatt_char(SERIAL_NUMBER_UUID)
-    print(f"Serial Number: {''.join(map(chr, serial_number))}")
+    logger.info("Serial Number: %s", "".join(map(chr, serial_number)))
 
     hardware_revision = await client.read_gatt_char(HARDWARE_REVISION_UUID)
-    print(f"Hardware Revision: {''.join(map(chr, hardware_revision))}")
+    logger.info("Hardware Revision: %s", "".join(map(chr, hardware_revision)))
 
     software_revision = await client.read_gatt_char(SOFTWARE_REVISION_UUID)
-    print(f"Software Revision: {''.join(map(chr, software_revision))}")
+    logger.info("Software Revision: %s", "".join(map(chr, software_revision)))
 
     firmware_revision = await client.read_gatt_char(FIRMWARE_REVISION_UUID)
-    print(f"Firmware Revision: {''.join(map(chr, firmware_revision))}")
+    logger.info("Firmware Revision: %s", "".join(map(chr, firmware_revision)))
 
 
 async def main_loop(state: State):

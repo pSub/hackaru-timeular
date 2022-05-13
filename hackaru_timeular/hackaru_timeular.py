@@ -4,6 +4,7 @@ A simple linkage between a Timular cube and Hackaru.
 
 import asyncio
 import os
+import signal
 from datetime import datetime
 from functools import partial
 from typing import Optional
@@ -29,6 +30,18 @@ class State(RecordClass):
     # pylint: disable=too-few-public-methods
     current_task: Optional[dict]
     config: dict
+
+
+class GracefulKiller:
+    kill_now = False
+
+    def __init__(self, state: State):
+        signal.signal(signal.SIGINT, partial(self.exit_gracefully, state))
+        signal.signal(signal.SIGTERM, partial(self.exit_gracefully, state))
+
+    def exit_gracefully(self, state, *args):
+        stop_current_task(state)
+        self.kill_now = True
 
 
 def now():
@@ -129,7 +142,8 @@ async def main_loop(state: State):
 
         await client.start_notify(ORIENTATION_UUID, callback)
 
-        while 1:
+        killer = GracefulKiller(state)
+        while not killer.kill_now:
             await asyncio.sleep(1)
 
 

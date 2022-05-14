@@ -3,6 +3,7 @@ A simple linkage between a Timular cube and Hackaru.
 """
 
 import asyncio
+from getpass import getpass
 import logging
 import os
 import signal
@@ -12,6 +13,7 @@ from typing import Optional
 
 import appdirs  # type: ignore
 import requests
+from requests import Session
 import yaml
 from bleak import BleakClient  # type: ignore
 from recordclass import RecordClass  # type: ignore
@@ -24,6 +26,11 @@ SOFTWARE_REVISION_UUID = "00002a28-0000-1000-8000-00805f9b34fb"
 FIRMWARE_REVISION_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
 ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
+HEADERS = {
+    "content-type": "application/json",
+    "x-requested-with": "XMLHttpRequest",
+}
+
 logging.basicConfig()
 logger = logging.getLogger("hackaru_timular")
 logger.setLevel(logging.INFO)
@@ -35,6 +42,7 @@ class State(RecordClass):
     # pylint: disable=too-few-public-methods
     current_task: Optional[dict]
     config: dict
+    session: Session
 
 
 class GracefulKiller:
@@ -54,13 +62,13 @@ def now():
     return datetime.utcnow().strftime("%a %B %d %Y %H:%M:%S")
 
 
-def headers(config):
-    """Returns the authenticated headers for Hackaru"""
-    return {
-        "cookie": f"auth_token_id={config['authid']}; auth_token_raw={config['authtoken']}",
-        "content-type": "application/json",
-        "x-requested-with": "XMLHttpRequest",
-    }
+def login(session, config):
+    data = f'{{"user":{{"email":"{config["email"]}","password":"{getpass()}"}}}}'
+    session.post(
+        "https://hackaru-api.pascal-wittmann.de/auth/auth_tokens",
+        data=data,
+        headers=HEADERS,
+    )
 
 
 def callback_with_state(
@@ -93,9 +101,7 @@ def start_task(state: State, project_id: int, description: str):
     """Start a task in Hackaru"""
     data = f'{{"activity":{{"description":"{description or ""}","project_id":{project_id},"started_at":"{now()}"}}}}'
 
-    resp = requests.post(
-        state.config["endpoint"], data=data, headers=headers(state.config)
-    )
+    resp = state.session.post(state.config["endpoint"], data=data, headers=HEADERS)
 
     state.current_task = resp.json()
 
@@ -107,10 +113,10 @@ def stop_current_task(state: State):
 
     data = f'{{"activity":{{"id":{state.current_task["id"]},"stopped_at":"{now()}"}}}}'
 
-    requests.put(
+    state.session.put(
         state.config["endpoint"] + "/" + str(state.current_task["id"]),
         data=data,
-        headers=headers(state.config),
+        headers=HEADERS,
     )
 
     state.current_task = None
@@ -158,7 +164,14 @@ def main():
     with open(os.path.join(config_dir, "config.yml"), "r", encoding="utf-8") as f:
 
         config = yaml.safe_load(f)
-        current_task = requests.get(
-            config["endpoint"] + "/working", headers=headers(config)
+        session = requests.Session()
+
+        login(session, config)
+
+        current_task = session.get(
+            config["endpoint"] + "/working", headers=HEADERS
         ).json()
-        asyncio.run(main_loop(State(config=config, current_task=current_task)))
+
+        asyncio.run(
+            main_loop(State(config=config, current_task=current_task, session=session))
+        )

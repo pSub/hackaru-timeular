@@ -3,20 +3,21 @@ A simple linkage between a Timular cube and Hackaru.
 """
 
 import asyncio
-from getpass import getpass
+import http.cookiejar
 import logging
 import os
 import signal
 from datetime import datetime
 from functools import partial
+from getpass import getpass
 from typing import Optional
 
 import appdirs  # type: ignore
 import requests
-from requests import Session
 import yaml
 from bleak import BleakClient  # type: ignore
 from recordclass import RecordClass  # type: ignore
+from requests import Session
 
 MODEL_NUMBER_UUID = "00002a24-0000-1000-8000-00805f9b34fb"
 MANUFACTURER_UUID = "00002a29-0000-1000-8000-00805f9b34fb"
@@ -69,6 +70,7 @@ def login(session, config):
         data=data,
         headers=HEADERS,
     )
+    session.cookies.save()
 
 
 def callback_with_state(
@@ -165,8 +167,12 @@ def main():
 
         config = yaml.safe_load(f)
         session = requests.Session()
+        session.cookies = http.cookiejar.LWPCookieJar(
+            filename=os.path.join(config_dir, "cookies.txt")
+        )
 
-        login(session, config)
+        if any(cookie.is_expired for cookie in session.cookies):
+            login(session, config)
 
         current_task = session.get(
             config["endpoint"] + "/working", headers=HEADERS

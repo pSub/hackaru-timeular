@@ -7,9 +7,9 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(
-    name="hackaru_timular",
+    name="hackaru_timeular",
     version="0.1.0",
-    description="Track your time with the Timular cube and Hackaru",
+    description="Track your time with the Timeular cube and Hackaru",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/pSub/hackaru-timeular",
@@ -19,6 +19,6 @@ setup(
     packages=["hackaru_timeular"],
     install_requires=["bleak", "recordclass", "appdirs", "requests", "PyYAML"],
     entry_points={
-        "console_scripts": ["hackaru-timular=hackaru_timeular:main"],
+        "console_scripts": ["hackaru-timeular=hackaru_timeular:main"],
     },
 )

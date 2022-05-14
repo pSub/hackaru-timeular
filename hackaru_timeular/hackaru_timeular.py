@@ -24,7 +24,9 @@ SOFTWARE_REVISION_UUID = "00002a28-0000-1000-8000-00805f9b34fb"
 FIRMWARE_REVISION_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
 ORIENTATION_UUID = "c7e70012-c847-11e6-8175-8c89a55d403c"
 
+logging.basicConfig()
 logger = logging.getLogger("hackaru_timular")
+logger.setLevel(logging.INFO)
 
 
 class State(RecordClass):

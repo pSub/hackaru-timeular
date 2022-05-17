@@ -19,7 +19,7 @@ import yaml
 from bleak import BleakClient  # type: ignore
 from recordclass import RecordClass  # type: ignore
 from requests import Session
-from tenacity import retry
+from tenacity import retry  # type: ignore
 
 MODEL_NUMBER_UUID = "00002a24-0000-1000-8000-00805f9b34fb"
 MANUFACTURER_UUID = "00002a29-0000-1000-8000-00805f9b34fb"

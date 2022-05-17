@@ -64,9 +64,10 @@ def now():
 
 
 def login(session, config):
+    """Login to Hackaru Server"""
     data = f'{{"user":{{"email":"{config["email"]}","password":"{getpass()}"}}}}'
     session.post(
-        "https://hackaru-api.pascal-wittmann.de/auth/auth_tokens",
+        config["endpoint"] + "/auth/auth_tokens",
         data=data,
         headers=HEADERS,
     )
@@ -103,7 +104,7 @@ def start_task(state: State, project_id: int, description: str):
     """Start a task in Hackaru"""
     data = f'{{"activity":{{"description":"{description or ""}","project_id":{project_id},"started_at":"{now()}"}}}}'
 
-    resp = state.session.post(state.config["endpoint"], data=data, headers=HEADERS)
+    resp = state.session.post(state.config["task_endpoint"], data=data, headers=HEADERS)
 
     state.current_task = resp.json()
 
@@ -116,7 +117,7 @@ def stop_current_task(state: State):
     data = f'{{"activity":{{"id":{state.current_task["id"]},"stopped_at":"{now()}"}}}}'
 
     state.session.put(
-        state.config["endpoint"] + "/" + str(state.current_task["id"]),
+        state.config["task_endpoint"] + "/" + str(state.current_task["id"]),
         data=data,
         headers=HEADERS,
     )
@@ -161,21 +162,28 @@ async def main_loop(state: State):
 
 
 def main():
-    """ "Console script entry point"""
+    """Console script entry point"""
     config_dir = appdirs.user_config_dir(appname="hackaru-timeular")
-    with open(os.path.join(config_dir, "config.yml"), "r", encoding="utf-8") as f:
 
-        config = yaml.safe_load(f)
+    with open(
+        os.path.join(config_dir, "config.yml"), "r", encoding="utf-8"
+    ) as config_file:
+
+        config = yaml.safe_load(config_file)
+        config["task_endpoint"] = config["endpoint"] + "/v1/activities"
+
         session = requests.Session()
         session.cookies = http.cookiejar.LWPCookieJar(
             filename=os.path.join(config_dir, "cookies.txt")
         )
+        session.cookies.load(ignore_discard=True)
+        session.cookies.clear_expired_cookies()
 
-        if any(cookie.is_expired for cookie in session.cookies):
+        if not session.cookies:
             login(session, config)
 
         current_task = session.get(
-            config["endpoint"] + "/working", headers=HEADERS
+            config["task_endpoint"] + "/working", headers=HEADERS
         ).json()
 
         asyncio.run(

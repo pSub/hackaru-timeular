@@ -9,7 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2  
     - name: Python Linter
-      uses: pSub/python-linter@master
+      uses: sunnysid3up/python-linter@master
       with:
         source: "hackaru_timeular"
         pylint-options: "--rcfile=.pylintrc"

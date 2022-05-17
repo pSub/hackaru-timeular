@@ -14,6 +14,7 @@ from typing import Optional
 
 import appdirs  # type: ignore
 import requests
+from tenacity import retry
 import yaml
 from bleak import BleakClient  # type: ignore
 from recordclass import RecordClass  # type: ignore
@@ -63,14 +64,17 @@ def now():
     return datetime.utcnow().strftime("%a %B %d %Y %H:%M:%S")
 
 
+@retry
 def login(session, config):
     """Login to Hackaru Server"""
     data = f'{{"user":{{"email":"{config["email"]}","password":"{getpass()}"}}}}'
-    session.post(
+    response = session.post(
         config["endpoint"] + "/auth/auth_tokens",
         data=data,
         headers=HEADERS,
     )
+
+    response.raise_for_status()
     session.cookies.save()
 
 

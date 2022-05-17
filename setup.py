@@ -17,7 +17,14 @@ setup(
     author_email="github@pascal-wittmann.de",
     license="MIT",
     packages=["hackaru_timeular"],
-    install_requires=["bleak", "recordclass", "appdirs", "requests", "PyYAML"],
+    install_requires=[
+        "bleak",
+        "recordclass",
+        "appdirs",
+        "requests",
+        "PyYAML",
+        "tenacity",
+    ],
     entry_points={
         "console_scripts": ["hackaru-timeular=hackaru_timeular:main"],
     },

@@ -10,15 +10,16 @@ import signal
 from datetime import datetime
 from functools import partial
 from getpass import getpass
+from threading import Lock
 from typing import Optional
 
 import appdirs  # type: ignore
 import requests
-from tenacity import retry
 import yaml
 from bleak import BleakClient  # type: ignore
 from recordclass import RecordClass  # type: ignore
 from requests import Session
+from tenacity import retry
 
 MODEL_NUMBER_UUID = "00002a24-0000-1000-8000-00805f9b34fb"
 MANUFACTURER_UUID = "00002a29-0000-1000-8000-00805f9b34fb"
@@ -36,6 +37,9 @@ HEADERS = {
 logging.basicConfig()
 logger = logging.getLogger("hackaru_timular")
 logger.setLevel(logging.INFO)
+
+
+state_lock = Lock()
 
 
 class State(RecordClass):
@@ -86,13 +90,14 @@ def callback_with_state(
     orientation = data[0]
     logger.info("Orientation: %i", orientation)
 
-    if orientation not in range(1, 9):
-        stop_current_task(state)
-        return
+    with state_lock:
+        if orientation not in range(1, 9):
+            stop_current_task(state)
+            return
 
-    stop_current_task(state)
-    task = get_task(state, orientation)
-    start_task(state, **task)
+        stop_current_task(state)
+        task = get_task(state, orientation)
+        start_task(state, **task)
 
 
 def get_task(state: State, orientation: int):

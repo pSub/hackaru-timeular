@@ -172,12 +172,14 @@ def main():
         config = yaml.safe_load(config_file)
         config["task_endpoint"] = config["endpoint"] + "/v1/activities"
 
+        cookies_file = os.path.join(config_dir, "cookies.txt")
         session = requests.Session()
-        session.cookies = http.cookiejar.LWPCookieJar(
-            filename=os.path.join(config_dir, "cookies.txt")
-        )
-        session.cookies.load(ignore_discard=True)
-        session.cookies.clear_expired_cookies()
+        session.cookies = http.cookiejar.LWPCookieJar(filename=cookies_file)
+        try:
+            session.cookies.load(ignore_discard=True)
+            session.cookies.clear_expired_cookies()
+        except FileNotFoundError:
+            pass
 
         if not session.cookies:
             login(session, config)

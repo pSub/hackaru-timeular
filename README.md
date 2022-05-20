@@ -25,7 +25,7 @@ address: 00:11:22:33:FF:EE
 endpoint: "https://api.hackaru.app"
 
 # The Email address connected to you Hackaru account
-email: mail@pascal-wittmann.de
+email: your-email@example.com
 
 # A list of tasks resembling the tasks in your Hackaru instance
 tasks:

@@ -58,7 +58,8 @@ class GracefulKiller:
         signal.signal(signal.SIGINT, partial(self.exit_gracefully, state))
         signal.signal(signal.SIGTERM, partial(self.exit_gracefully, state))
 
-    def exit_gracefully(self, state, *args):
+    def exit_gracefully(self, state):
+        """ "Stop the current task before exit"""
         stop_current_task(state)
         self.kill_now = True
 

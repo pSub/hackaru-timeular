@@ -97,8 +97,11 @@ def callback_with_state(
             return
 
         stop_current_task(state)
-        task = get_task(state, orientation)
-        start_task(state, **task)
+        try:
+            task = get_task(state, orientation)
+            start_task(state, **task)
+        except KeyError:
+            logger.error("There is no task assigned for side %i", orientation)
 
 
 def get_task(state: State, orientation: int):

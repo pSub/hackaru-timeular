@@ -15,6 +15,7 @@ from typing import Optional
 
 import appdirs  # type: ignore
 import requests
+import yamale
 import yaml
 from bleak import BleakClient  # type: ignore
 from recordclass import RecordClass  # type: ignore
@@ -33,6 +34,31 @@ HEADERS = {
     "content-type": "application/json",
     "x-requested-with": "XMLHttpRequest",
 }
+
+CONFIG_SCHEMA = yamale.make_schema(
+    content="""
+timeular:
+    device-address: regex('([0-9A-F]{2}):([0-9A-F]{2}):([0-9A-F]{2}):([0-9A-F]{2}):([0-9A-F]{2}):([0-9A-F]{2})')
+
+hackaru:
+    endpoint: str()
+    email: str()
+
+mapping: list(include('task-mapping'))
+
+---
+
+hackaru-task:
+    name: str(required=False)
+    id: int()
+    description: str(required=False)
+
+task-mapping:
+    side: int(min=1, max=9)
+    task: include('hackaru-task')
+"""
+)
+
 
 logging.basicConfig()
 logger = logging.getLogger("hackaru_timular")
@@ -74,7 +100,7 @@ def login(session, config):
     """Login to Hackaru Server"""
     data = f'{{"user":{{"email":"{config["email"]}","password":"{getpass()}"}}}}'
     response = session.post(
-        config["endpoint"] + "/auth/auth_tokens",
+        config["hackaru"]["endpoint"] + "/auth/auth_tokens",
         data=data,
         headers=HEADERS,
     )
@@ -100,16 +126,21 @@ def callback_with_state(
         try:
             task = get_task(state, orientation)
             start_task(state, **task)
-        except KeyError:
+        except StopIteration:
             logger.error("There is no task assigned for side %i", orientation)
 
 
 def get_task(state: State, orientation: int):
     """Retrieve a task for an orientation from the config file"""
-    task = state.config["mapping"][orientation]
+    task = next(
+        mapping["task"]
+        for mapping in state.config["mapping"]
+        if mapping["side"] == orientation
+    )
+
     return {
-        "project_id": state.config["tasks"][task]["id"],
-        "description": state.config["tasks"][task]["description"],
+        "project_id": task["id"],
+        "description": task.get("description", ""),
     }
 
 
@@ -162,7 +193,7 @@ async def print_device_information(client):
 
 async def main_loop(state: State):
     """Main loop listening for orientation changes"""
-    async with BleakClient(state.config["address"]) as client:
+    async with BleakClient(state.config["timeular"]["device-address"]) as client:
         await print_device_information(client)
 
         callback = partial(callback_with_state, state)
@@ -183,7 +214,11 @@ def main():
     ) as config_file:
 
         config = yaml.safe_load(config_file)
-        config["task_endpoint"] = config["endpoint"] + "/v1/activities"
+
+        data = yamale.make_data(config_file.name)
+        yamale.validate(CONFIG_SCHEMA, data)
+
+        config["task_endpoint"] = config["hackaru"]["endpoint"] + "/v1/activities"
 
         cookies_file = os.path.join(config_dir, "cookies.txt")
         session = requests.Session()

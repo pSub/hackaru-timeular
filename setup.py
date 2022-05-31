@@ -24,6 +24,7 @@ setup(
         "requests",
         "PyYAML",
         "tenacity",
+        "yamale",
     ],
     entry_points={
         "console_scripts": ["hackaru-timeular=hackaru_timeular:main"],

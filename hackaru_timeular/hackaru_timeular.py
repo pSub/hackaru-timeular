@@ -7,10 +7,12 @@ import http.cookiejar
 import logging
 import os
 import signal
+import tkinter as tk
 from datetime import datetime
 from functools import partial
 from getpass import getpass
 from threading import Lock
+from tkinter import simpledialog
 from typing import Optional
 
 import appdirs  # type: ignore
@@ -146,11 +148,24 @@ def get_task(state: State, orientation: int):
 
 def start_task(state: State, project_id: int, description: str):
     """Start a task in Hackaru"""
-    data = f'{{"activity":{{"description":"{description or ""}","project_id":{project_id},"started_at":"{now()}"}}}}'
+    data = f'{{"activity":{{"description":"{description or prompt_for_description()}","project_id":{project_id},"started_at":"{now()}"}}}}'
 
     resp = state.session.post(state.config["task_endpoint"], data=data, headers=HEADERS)
 
     state.current_task = resp.json()
+
+
+def prompt_for_description():
+    root = tk.Tk()
+    root.overrideredirect(1)
+    root.withdraw()
+
+    return (
+        simpledialog.askstring(
+            title="Task Description", prompt="What's are you working on?"
+        )
+        or ""
+    )
 
 
 def stop_current_task(state: State):

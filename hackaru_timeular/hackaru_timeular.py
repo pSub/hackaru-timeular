@@ -39,6 +39,7 @@ HEADERS = {
 
 CONFIG_SCHEMA = yamale.make_schema(
     content="""
+cli: bool(required=False)
 timeular:
     device-address: regex('([0-9A-F]{2}):([0-9A-F]{2}):([0-9A-F]{2}):([0-9A-F]{2}):([0-9A-F]{2}):([0-9A-F]{2})')
 
@@ -112,6 +113,22 @@ def login(session, config):
     session.cookies.save()
 
 
+def prompt_for_password(cli: bool):
+    if cli:
+        return getpass()
+    else:
+        root = tk.Tk()
+        root.overrideredirect(1)
+        root.withdraw()
+
+        return (
+            simpledialog.askstring(
+                title="Task Description", prompt="What are you working on?", show="*"
+            )
+            or ""
+        )
+
+
 def callback_with_state(
     state: State, sender: int, data: bytearray  # pylint: disable=unused-argument
 ):
@@ -149,24 +166,27 @@ def get_task(state: State, orientation: int):
 
 def start_task(state: State, project_id: int, description: str):
     """Start a task in Hackaru"""
-    data = f'{{"activity":{{"description":"{description or prompt_for_description()}","project_id":{project_id},"started_at":"{now()}"}}}}'
+    data = f'{{"activity":{{"description":"{description or prompt_for_description(state.config["cli"])}","project_id":{project_id},"started_at":"{now()}"}}}}'
 
     resp = state.session.post(state.config["task_endpoint"], data=data, headers=HEADERS)
 
     state.current_task = resp.json()
 
 
-def prompt_for_description():
-    root = tk.Tk()
-    root.overrideredirect(1)
-    root.withdraw()
+def prompt_for_description(cli: bool):
+    if cli:
+        return input("What are you working on? ")
+    else:
+        root = tk.Tk()
+        root.overrideredirect(1)
+        root.withdraw()
 
-    return (
-        simpledialog.askstring(
-            title="Task Description", prompt="What's are you working on?"
+        return (
+            simpledialog.askstring(
+                title="Task Description", prompt="What are you working on?"
+            )
+            or ""
         )
-        or ""
-    )
 
 
 def stop_current_task(state: State):
@@ -234,6 +254,9 @@ def main():
         yamale.validate(CONFIG_SCHEMA, data)
 
         config["task_endpoint"] = config["hackaru"]["endpoint"] + "/v1/activities"
+
+        if "cli" not in config:
+            config["cli"] = False
 
         cookies_file = os.path.join(config_dir, "cookies.txt")
         session = requests.Session()

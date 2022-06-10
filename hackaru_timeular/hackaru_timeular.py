@@ -15,7 +15,7 @@ from typing import Optional
 
 import appdirs  # type: ignore
 import requests
-import yamale
+import yamale  # type: ignore
 import yaml
 from bleak import BleakClient  # type: ignore
 from recordclass import RecordClass  # type: ignore

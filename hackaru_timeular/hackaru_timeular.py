@@ -83,12 +83,13 @@ class GracefulKiller:
     kill_now = False
 
     def __init__(self, state: State):
-        signal.signal(signal.SIGINT, partial(self.exit_gracefully, state))
-        signal.signal(signal.SIGTERM, partial(self.exit_gracefully, state))
+        for sig in [signal.SIGINT, signal.SIGTERM]:
+            signal.signal(sig, partial(self.exit_gracefully, state))
 
     def exit_gracefully(self, state, *_):
         """ "Stop the current task before exit"""
         stop_current_task(state)
+        logger.info("Stopped current task, shutting down.")
         self.kill_now = True
 
 
@@ -206,7 +207,7 @@ async def print_device_information(client):
     logger.info("Firmware Revision: %s", "".join(map(chr, firmware_revision)))
 
 
-async def main_loop(state: State):
+async def main_loop(state: State, killer: GracefulKiller):
     """Main loop listening for orientation changes"""
     async with BleakClient(state.config["timeular"]["device-address"]) as client:
         await print_device_information(client)
@@ -215,7 +216,6 @@ async def main_loop(state: State):
 
         await client.start_notify(ORIENTATION_UUID, callback)
 
-        killer = GracefulKiller(state)
         while not killer.kill_now:
             await asyncio.sleep(1)
 
@@ -251,6 +251,7 @@ def main():
             config["task_endpoint"] + "/working", headers=HEADERS
         ).json()
 
-        asyncio.run(
-            main_loop(State(config=config, current_task=current_task, session=session))
-        )
+        state = State(config=config, current_task=current_task, session=session)
+        killer = GracefulKiller(state)
+
+        asyncio.run(main_loop(state, killer))

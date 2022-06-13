@@ -2,6 +2,7 @@
 A simple linkage between a Timular cube and Hackaru.
 """
 
+import argparse
 import asyncio
 import http.cookiejar
 import logging
@@ -46,6 +47,8 @@ timeular:
 hackaru:
     endpoint: str()
     email: str()
+
+task_endpoint: str(required=False)
 
 mapping: list(include('task-mapping'))
 
@@ -240,12 +243,119 @@ async def main_loop(state: State, killer: GracefulKiller):
             await asyncio.sleep(1)
 
 
-def main():
+def hackaru_projects(state: State):
+    return state.session.get(
+        state.config["hackaru"]["endpoint"] + "/v1/projects", headers=HEADERS
+    ).json()
+
+
+def get_project_name(projects: dict, id: int):
+    return next(project["name"] for project in projects if project["id"] == id) or ""
+
+
+def get_project_id(projects: dict, name: str):
+    return next(project["id"] for project in projects if project["name"] == name)
+
+
+def to_mapping(project_names, projects, descriptions):
+    mapping = []
+    for side in range(1, 9):
+        if project_names[side].get():
+            project_name = project_names[side].get()
+            mapping.append(
+                {
+                    "side": side,
+                    "task": {
+                        "name": project_name,
+                        "id": get_project_id(projects, project_name),
+                        "description": descriptions.get("side", ""),
+                    },
+                }
+            )
+    return mapping
+
+
+def update_mapping(
+    state: State, config_file_name, project_names, projects, descriptions
+):
+    state.config["mapping"] = to_mapping(project_names, projects, descriptions)
+    with open(config_file_name, "w") as config_file:
+        yaml.dump(state.config, config_file)
+
+
+def mapping_editor(state: State, config_file_name):
+    root = tk.Tk()
+    root.geometry("900x900")
+    root.columnconfigure(0, weight=1)
+    root.columnconfigure(1, weight=3)
+
+    for side in range(1, 9):
+        side_label = tk.Label(root, text=str(side))
+        side_label.grid(column=0, row=side, sticky=tk.W, padx=5, pady=5)
+
+    projects = hackaru_projects(state)
+
+    project_names = {}
+    dropdown_dict = {}
+    frames = {}
+    descriptions = {}
+    description_inputs = {}
+
+    for side in range(1, 9):
+
+        frames[side] = tk.Frame(root)
+
+        project_names[side] = tk.StringVar()
+        descriptions[side] = tk.StringVar()
+        try:
+            task = get_task(state, side)
+            project_names[side].set(get_project_name(projects, task["project_id"]))
+            descriptions[side].set(task["description"])
+        except StopIteration:
+            pass
+
+        dropdown_dict[side] = tk.OptionMenu(
+            frames[side],
+            project_names[side],
+            *list(map(lambda project: project["name"], projects)),
+        )
+        side_label = tk.Label(frames[side], text=str(side))
+        description_inputs[side] = tk.Entry(
+            frames[side], textvariable=descriptions[side]
+        )
+
+        frames[side].grid(column=1, row=side, sticky=tk.W, padx=5, pady=5)
+        dropdown_dict[side].pack(anchor="w")
+        description_inputs[side].pack(anchor="w")
+
+    save_config_button = tk.Button(
+        root,
+        text="Save configuration",
+        command=lambda: update_mapping(
+            state, config_file_name, project_names, projects, descriptions
+        ),
+    )
+    save_config_button.grid(column=1, row=9)
+    root.mainloop()
+
+
+def main(*args):
     """Console script entry point"""
+    parser = argparse.ArgumentParser(
+        description="hackaru-timeular",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    parser.add_argument(
+        "-e", "--mapping-editor", action="store_true", help="mapping editor"
+    )
+
+    args = vars(parser.parse_args())
+
     config_dir = appdirs.user_config_dir(appname="hackaru-timeular")
 
     with open(
-        os.path.join(config_dir, "config.yml"), "r", encoding="utf-8"
+        os.path.join(config_dir, "config.yml"), "r+", encoding="utf-8"
     ) as config_file:
 
         config = yaml.safe_load(config_file)
@@ -253,28 +363,33 @@ def main():
         data = yamale.make_data(config_file.name)
         yamale.validate(CONFIG_SCHEMA, data)
 
-        config["task_endpoint"] = config["hackaru"]["endpoint"] + "/v1/activities"
+    config["task_endpoint"] = config["hackaru"]["endpoint"] + "/v1/activities"
 
-        if "cli" not in config:
-            config["cli"] = False
+    if "cli" not in config:
+        config["cli"] = False
 
-        cookies_file = os.path.join(config_dir, "cookies.txt")
-        session = requests.Session()
-        session.cookies = http.cookiejar.LWPCookieJar(filename=cookies_file)
-        try:
-            session.cookies.load(ignore_discard=True)
-            session.cookies.clear_expired_cookies()
-        except FileNotFoundError:
-            pass
+    cookies_file = os.path.join(config_dir, "cookies.txt")
+    session = requests.Session()
+    session.cookies = http.cookiejar.LWPCookieJar(filename=cookies_file)
+    try:
+        session.cookies.load(ignore_discard=True)
+        session.cookies.clear_expired_cookies()
+    except FileNotFoundError:
+        pass
 
-        if not session.cookies:
-            login(session, config)
+    if not session.cookies:
+        login(session, config)
 
-        current_task = session.get(
-            config["task_endpoint"] + "/working", headers=HEADERS
-        ).json()
+    current_task = session.get(
+        config["task_endpoint"] + "/working", headers=HEADERS
+    ).json()
 
-        state = State(config=config, current_task=current_task, session=session)
-        killer = GracefulKiller(state)
+    state = State(config=config, current_task=current_task, session=session)
+    killer = GracefulKiller(state)
 
+    if args["mapping_editor"]:
+        mapping_editor(
+            state=state, config_file_name=os.path.join(config_dir, "config.yml")
+        )
+    else:
         asyncio.run(main_loop(state, killer))

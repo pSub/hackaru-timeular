@@ -319,6 +319,7 @@ def mapping_editor(state: State, config_file_name):
             project_names[side],
             *list(map(lambda project: project["name"], projects)),
         )
+        dropdown_dict[side].config(width=18)
         side_label = tk.Label(frames[side], text=str(side))
         description_inputs[side] = tk.Entry(
             frames[side], textvariable=descriptions[side]

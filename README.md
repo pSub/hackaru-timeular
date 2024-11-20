@@ -1,6 +1,9 @@
 # hackaru-timeular
 Track your time with the Timeular cube and Hackaru
 
+**Notice**: This project is no longer actively developed as the development of Hackaru was stopped in November 2022. I still use it until I have a different setup. However, do not count on security
+or other updates for `hackaru-timeular`. I will archive this repository as soon I switch to a different setup.
+
 ## Motivation
 
 Timeular (https://timeular.com/) offers a hardware and a software component that helps you to keep track of your time. The great thing is, that you can use the hardware without their software. I really like the idea of the hardware cube. It simply is physically present right besides you. When using the Timeular cube, it is rare that I forget to start or stop the timer for a task. If you want to learn more about the tracker, visit https://timeular.com/tracker/.

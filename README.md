@@ -1,3 +1,6 @@
+ > [!IMPORTANT]
+ > As similar tool that connects the Timular cube to solidtime and zistemo is being developed at https://codeberg.org/pSub/solidular.
+
 # hackaru-timeular
 Track your time with the Timeular cube and Hackaru
 
